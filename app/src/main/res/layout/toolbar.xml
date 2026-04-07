@@ -1,0 +1,74 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <!-- MENU ICON -->
+    <LinearLayout
+        android:id="@+id/menuLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageView
+            android:id="@+id/menu"
+            android:layout_width="@dimen/toolbar_menu"
+            android:layout_height="@dimen/toolbar_menu"
+            android:src="@drawable/ic_menu"
+            app:tint="@color/text_color_heading"
+            />
+
+        <ImageView
+            android:id="@+id/userProfile"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/bg_circle"
+            android:src="@drawable/temp_profile"
+            />
+
+    </LinearLayout>
+
+
+    <ImageView
+        android:id="@+id/appIcon"
+        android:layout_width="37dp"
+        android:layout_height="17dp"
+        android:src="@drawable/app_icon"
+        app:layout_constraintStart_toEndOf="@id/menuLayout"
+        app:layout_constraintEnd_toStartOf="@id/notification"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        />
+
+    <!-- SEARCH ICON -->
+    <ImageView
+        android:id="@+id/search"
+        android:layout_width="@dimen/toolbar_icon"
+        android:layout_height="@dimen/toolbar_icon"
+        android:src="@drawable/ic_search"
+        android:layout_marginEnd="5dp"
+        app:tint="@color/text_color_heading"
+        app:layout_constraintEnd_toStartOf="@id/notification"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <!-- NOTIFICATION ICON -->
+    <ImageView
+        android:id="@+id/notification"
+        android:layout_width="@dimen/toolbar_icon"
+        android:layout_height="@dimen/toolbar_icon"
+        android:src="@drawable/ic_notification"
+        app:tint="@color/text_color_heading"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

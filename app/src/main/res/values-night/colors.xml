@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="text_color_heading">#ffffff</color>
+    <color name="text_color_description">#677580</color>
+    <color name="toolBarColor">#31343D</color>
+</resources>

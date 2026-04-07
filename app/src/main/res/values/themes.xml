@@ -1,0 +1,9 @@
+<resources>
+
+    <style name="Base.Theme.CallApiTestCode" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- only theme items -->
+    </style>
+
+    <style name="Theme.CallApiTestCode" parent="Base.Theme.CallApiTestCode"/>
+
+</resources>

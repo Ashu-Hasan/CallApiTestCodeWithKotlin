@@ -1,0 +1,130 @@
+<resources>
+
+    <!-- ===================== -->
+    <!-- GENERAL SPACING -->
+    <!-- ===================== -->
+    <dimen name="space_2dp">2dp</dimen>
+    <dimen name="space_4dp">4dp</dimen>
+    <dimen name="space_6dp">6dp</dimen>
+    <dimen name="space_8dp">8dp</dimen>
+    <dimen name="space_10dp">10dp</dimen>
+    <dimen name="space_12dp">12dp</dimen>
+    <dimen name="space_14dp">14dp</dimen>
+    <dimen name="space_16dp">16dp</dimen>
+    <dimen name="space_18dp">18dp</dimen>
+    <dimen name="space_20dp">20dp</dimen>
+    <dimen name="space_24dp">24dp</dimen>
+    <dimen name="space_28dp">28dp</dimen>
+    <dimen name="space_32dp">32dp</dimen>
+
+    <!-- ===================== -->
+    <!-- PADDING -->
+    <!-- ===================== -->
+    <dimen name="padding_xs">4dp</dimen>
+    <dimen name="padding_sm">8dp</dimen>
+    <dimen name="padding_md">12dp</dimen>
+    <dimen name="padding_lg">16dp</dimen>
+    <dimen name="padding_xl">20dp</dimen>
+    <dimen name="padding_xxl">24dp</dimen>
+
+    <!-- ===================== -->
+    <!-- MARGINS -->
+    <!-- ===================== -->
+    <dimen name="margin_xs">4dp</dimen>
+    <dimen name="margin_sm">8dp</dimen>
+    <dimen name="margin_md">12dp</dimen>
+    <dimen name="margin_lg">16dp</dimen>
+    <dimen name="margin_xl">20dp</dimen>
+    <dimen name="margin_xxl">24dp</dimen>
+
+    <!-- ===================== -->
+    <!-- TEXT SIZES -->
+    <!-- ===================== -->
+    <dimen name="text_10">10sp</dimen>
+    <dimen name="text_12">12sp</dimen>
+    <dimen name="text_14">14sp</dimen>
+    <dimen name="text_16">16sp</dimen>
+    <dimen name="text_18">18sp</dimen>
+    <dimen name="text_20">20sp</dimen>
+    <dimen name="text_22">22sp</dimen>
+    <dimen name="text_24">24sp</dimen>
+    <dimen name="text_26">26sp</dimen>
+    <dimen name="text_28">28sp</dimen>
+    <dimen name="text_32">32sp</dimen>
+    <dimen name="text_36">36sp</dimen>
+    <dimen name="text_48">48sp</dimen>
+    <dimen name="text_64">64sp</dimen>
+    <dimen name="text_72">72sp</dimen>
+
+    <!-- ===================== -->
+    <!-- ICON SIZES -->
+    <!-- ===================== -->
+    <dimen name="icon_12">12dp</dimen>
+    <dimen name="icon_16">16dp</dimen>
+    <dimen name="icon_20">20dp</dimen>
+    <dimen name="icon_24">24dp</dimen>
+    <dimen name="icon_28">28dp</dimen>
+    <dimen name="icon_32">32dp</dimen>
+    <dimen name="icon_36">36dp</dimen>
+    <dimen name="icon_40">40dp</dimen>
+    <dimen name="icon_48">48dp</dimen>
+
+    <!-- ===================== -->
+    <!-- TOOLBAR -->
+    <!-- ===================== -->
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="toolbar_icon">48dp</dimen>
+    <dimen name="toolbar_menu">40dp</dimen>
+    <dimen name="toolbar_padding">16dp</dimen>
+
+    <!-- ===================== -->
+    <!-- CARD -->
+    <!-- ===================== -->
+    <dimen name="card_radius_8">8dp</dimen>
+    <dimen name="card_radius_12">12dp</dimen>
+    <dimen name="card_radius_16">16dp</dimen>
+    <dimen name="card_radius_20">20dp</dimen>
+    <dimen name="card_radius_24">24dp</dimen>
+    <dimen name="card_radius_28">28dp</dimen>
+    <dimen name="card_elevation_2">2dp</dimen>
+    <dimen name="card_elevation_4">4dp</dimen>
+    <dimen name="card_elevation_6">6dp</dimen>
+    <dimen name="card_elevation_8">8dp</dimen>
+
+    <!-- ===================== -->
+    <!-- BUTTON / CHIP -->
+    <!-- ===================== -->
+    <dimen name="chip_padding_horizontal">12dp</dimen>
+    <dimen name="chip_padding_vertical">6dp</dimen>
+    <dimen name="chip_radius">12dp</dimen>
+    <dimen name="button_radius">16dp</dimen>
+
+    <!-- ===================== -->
+    <!-- AQI SECTION -->
+    <!-- ===================== -->
+    <dimen name="aqi_text_big">72sp</dimen>
+    <dimen name="aqi_label">14sp</dimen>
+    <dimen name="aqi_chip_padding">8dp</dimen>
+
+    <!-- ===================== -->
+    <!-- WEATHER CARD -->
+    <!-- ===================== -->
+    <dimen name="weather_icon">40dp</dimen>
+    <dimen name="weather_temp">28sp</dimen>
+    <dimen name="weather_small_text">12sp</dimen>
+
+    <!-- ===================== -->
+    <!-- FORECAST -->
+    <!-- ===================== -->
+    <dimen name="forecast_item_width">60dp</dimen>
+    <dimen name="forecast_icon">24dp</dimen>
+    <dimen name="forecast_temp">16sp</dimen>
+    <dimen name="forecast_time">12sp</dimen>
+
+    <!-- ===================== -->
+    <!-- DIVIDER -->
+    <!-- ===================== -->
+    <dimen name="divider_height">1dp</dimen>
+    <dimen name="divider_margin">8dp</dimen>
+
+</resources>

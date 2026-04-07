@@ -1,0 +1,46 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="303dp"
+    android:height="104dp"
+    android:viewportWidth="303"
+    android:viewportHeight="104">
+
+  <path
+      android:pathData="M19,0.3L284,0.3A18.7,18.7 0,0 1,302.7 19L302.7,85A18.7,18.7 0,0 1,284 103.7L19,103.7A18.7,18.7 0,0 1,0.3 85L0.3,19A18.7,18.7 0,0 1,19 0.3z"
+      android:strokeWidth="1"
+      android:fillAlpha="0.15">
+
+    <!-- Frosted Glass Gradient -->
+    <aapt:attr name="android:fillColor">
+      <gradient
+          android:startX="0"
+          android:startY="0"
+          android:endX="303"
+          android:endY="104"
+          android:type="linear">
+
+        <item android:offset="0" android:color="#33FFFFFF"/>
+        <item android:offset="0.5" android:color="#1AFFFFFF"/>
+        <item android:offset="1" android:color="#0DFFFFFF"/>
+
+      </gradient>
+    </aapt:attr>
+
+    <!-- Light reflection border -->
+    <aapt:attr name="android:strokeColor">
+      <gradient
+          android:startX="0"
+          android:startY="0"
+          android:endX="303"
+          android:endY="104"
+          android:type="linear">
+
+        <item android:offset="0" android:color="#80FFFFFF"/>
+        <item android:offset="1" android:color="#10FFFFFF"/>
+
+      </gradient>
+    </aapt:attr>
+
+  </path>
+
+</vector>

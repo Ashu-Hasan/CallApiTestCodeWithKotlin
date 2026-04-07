@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="bgTop">#EAF4EC</color>
+    <color name="bgBottom">#8BC34A</color>
+
+    <color name="textPrimary">#1A1A1A</color>
+    <color name="textSecondary">#6B6B6B</color>
+
+    <color name="aqiGood">#4CAF50</color>
+    <color name="cardBg">#FFFFFF</color>
+
+
+    <color name="back_bg1">#fafafd</color>
+    <color name="background_color1">#eaf6e2</color>
+    <color name="background_color2">#ecf6ec</color>
+    <color name="background_color3">#ebf5ea</color>
+    <color name="background_color4">#dde4e8</color>
+    <color name="background_color5">#31343d</color>
+
+
+    <color name="text_color1">#59B61F</color>
+    <color name="text_color_heading">#31343D</color>
+    <color name="text_color_description">#677580</color>
+    <color name="toolBarColor">#ffffff</color>
+
+
+    <color name="good_color">#59B61F</color>
+    <color name="moderate_color">#EEC732</color>
+    <color name="poor_color">#EA8C34</color>
+    <color name="unhealthy_color">#E95478</color>
+    <color name="severe_color">#B33FBA</color>
+    <color name="hazardous_color">#C92033</color>
+
+    <color name="light_good_color">#eaf6e2</color>
+    <color name="light_moderate_color">#f4f3ed</color>
+    <color name="light_poor_color">#f4ebe3</color>
+    <color name="light_unhealthy_color">#f3dde2</color>
+    <color name="light_severe_color">#ead6eb</color>
+    <color name="light_hazardous_color">#efd5d8</color>
+
+
+
+</resources>
