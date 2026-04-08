@@ -1,13 +1,12 @@
-package com.ashu.callapitestcode.data.Api;
+package com.ashu.callapitestcode.data.Api
 
-public interface APIDataUri {
+object APIDataUri {
 
-    public static String getAQIUrl(String lat, String lon) {
-        return "getNearestLocationV2?lat="+ lat +"&long="+ lon +"&type=1";
+    fun getAQIUrl(lat: String, lon: String): String {
+        return "getNearestLocationV2?lat=$lat&long=$lon&type=1"
     }
 
-    public static String getWeatherUrl(String locationid, String searchtype, String type) {
-        return "getWeatherDetailsWithForecastApp?locationid="+ locationid +"&searchtype="+ searchtype +"&type=" + type;
+    fun getWeatherUrl(locationId: String, searchType: String, type: String): String {
+        return "getWeatherDetailsWithForecastApp?locationid=$locationId&searchtype=$searchType&type=$type"
     }
-
 }

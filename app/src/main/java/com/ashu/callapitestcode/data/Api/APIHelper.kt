@@ -1,122 +1,122 @@
-package com.ashu.callapitestcode.data.Api;
+package com.ashu.callapitestcode.data.Api
 
-import android.util.Log;
+import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
+import org.json.JSONArray
+import org.json.JSONObject
+import retrofit2.Response
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
+object APIHelper {
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+    private val gson = Gson()
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
+    fun getResponseData(
+        TAG: String,
+        response: Response<JsonObject>,
+        ENABLE_TESTING: Boolean
+    ): JSONObject? {
 
-import retrofit2.Response;
-
-public interface APIHelper {
-    static final Gson gson = new Gson();
-    public static JSONObject getResponseData(String TAG,
-                                             Response<JsonObject> response,
-                                             boolean ENABLE_TESTING) {
-
-        JSONObject resultData = null;
+        var resultData: JSONObject? = null
 
         try {
+            val httpCode = response.code()
 
-            int httpCode = response.code();
+            showTestLog(TAG, "Raw Response Code: $httpCode", ENABLE_TESTING)
+            showTestLog(TAG, "Raw Response Body: ${response.body()}", ENABLE_TESTING)
+            showTestLog(
+                TAG,
+                "Raw Error Body: ${response.errorBody()?.toString() ?: "null"}",
+                ENABLE_TESTING
+            )
 
-            showTestLog(TAG, "Raw Response Code: " + httpCode, ENABLE_TESTING);
-            showTestLog(TAG, "Raw Response Body: " + response.body(), ENABLE_TESTING);
-            showTestLog(TAG, "Raw Error Body: " +
-                            (response.errorBody() != null ? response.errorBody().toString() : "null"),
-                    ENABLE_TESTING);
+            if (response.isSuccessful && response.body() != null) {
 
-            if (response.isSuccessful() && response.body() != null) {
+                resultData = JSONObject(response.body().toString())
+                resultData.put("http_code", httpCode)
 
-                resultData = new JSONObject(response.body().toString());
-                resultData.put("http_code", httpCode);   // ✅ Inject here
-
-                showTestLog(TAG, TAG + " Json Response: " + resultData, ENABLE_TESTING);
-                return resultData;
+                showTestLog(TAG, "$TAG Json Response: $resultData", ENABLE_TESTING)
+                return resultData
 
             } else if (response.errorBody() != null) {
 
-                String errorJson = response.errorBody().string();
-                resultData = new JSONObject(errorJson);
-                resultData.put("http_code", httpCode);   // ✅ Inject here
+                val errorJson = response.errorBody()!!.string()
+                resultData = JSONObject(errorJson)
+                resultData.put("http_code", httpCode)
 
-                showTestLog(TAG, TAG + " errorJson: " + resultData, ENABLE_TESTING);
-                return resultData;
+                showTestLog(TAG, "$TAG errorJson: $resultData", ENABLE_TESTING)
+                return resultData
 
             } else {
 
-                JSONObject error = new JSONObject();
-                error.put("status", false);
-                error.put("message", "No response from server");
-                error.put("http_code", httpCode);   // ✅ Inject here
+                val error = JSONObject().apply {
+                    put("status", false)
+                    put("message", "No response from server")
+                    put("http_code", httpCode)
+                }
 
-                showTestLog(TAG, TAG + " errorJson: " + error, ENABLE_TESTING);
-                return error;
+                showTestLog(TAG, "$TAG errorJson: $error", ENABLE_TESTING)
+                return error
             }
 
-        } catch (Exception e) {
+        } catch (e: Exception) {
 
-            e.printStackTrace();
+            e.printStackTrace()
 
-            try {
-                JSONObject error = new JSONObject();
-                error.put("status", false);
-                error.put("message", "Parse error: " + e.getMessage());
-                error.put("http_code", response != null ? response.code() : -1);  // ✅ Safe fallback
+            return try {
+                val error = JSONObject().apply {
+                    put("status", false)
+                    put("message", "Parse error: ${e.message}")
+                    put("http_code", response.code())
+                }
 
-                showTestLog(TAG, TAG + " errorJson: " + error, ENABLE_TESTING);
-                return error;
+                showTestLog(TAG, "$TAG errorJson: $error", ENABLE_TESTING)
+                error
 
-            } catch (Exception ignored) { }
-        }
-
-        return resultData;
-    }
-
-
-
-    // Generic method to convert JSONObject to any Data Model
-    public static <T> T convertJsonToModel(JSONObject jsonObject, Class<T> modelClass) {
-        try {
-            return gson.fromJson(jsonObject.toString(), modelClass);
-        } catch (JsonSyntaxException e) {
-            e.printStackTrace();
-            return null; // Return null in case of an error
-        }
-    }
-
-    public static <T> ArrayList<T> convertJsonArrayToList(JSONArray jsonArray, Class<T> modelClass) {
-        Gson gson = new Gson();
-        Type listType = TypeToken.getParameterized(ArrayList.class, modelClass).getType();
-        return gson.fromJson(jsonArray.toString(), listType);
-    }
-
-    public static ArrayList<String> convertStringToArrayList(String TAG, String jsonString) {
-        ArrayList<String> arrayList = new ArrayList<>();
-
-        try {
-            JSONArray jsonArray = new JSONArray(jsonString);
-            for (int i = 0; i < jsonArray.length(); i++) {
-                arrayList.add(jsonArray.getString(i));
+            } catch (ignored: Exception) {
+                null
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.d(TAG, "convertStringToArrayList error:- " + e.getMessage());
         }
-
-        return arrayList;
     }
 
-    public static void showTestLog(String TAG, String message, boolean ENABLE_TESTING) {
+    // 🔁 Convert JSONObject → Model
+    fun <T> convertJsonToModel(jsonObject: JSONObject, modelClass: Class<T>): T? {
+        return try {
+            gson.fromJson(jsonObject.toString(), modelClass)
+        } catch (e: JsonSyntaxException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // 🔁 Convert JSONArray → List<Model>
+    fun <T> convertJsonArrayToList(jsonArray: JSONArray, modelClass: Class<T>): ArrayList<T> {
+        val listType = TypeToken.getParameterized(ArrayList::class.java, modelClass).type
+        return gson.fromJson(jsonArray.toString(), listType)
+    }
+
+    // 🔁 Convert String → ArrayList<String>
+    fun convertStringToArrayList(TAG: String, jsonString: String): ArrayList<String> {
+        val arrayList = ArrayList<String>()
+
+        try {
+            val jsonArray = JSONArray(jsonString)
+            for (i in 0 until jsonArray.length()) {
+                arrayList.add(jsonArray.getString(i))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.d(TAG, "convertStringToArrayList error:- ${e.message}")
+        }
+
+        return arrayList
+    }
+
+    fun showTestLog(TAG: String, message: String, ENABLE_TESTING: Boolean) {
         if (ENABLE_TESTING) {
-            Log.d(TAG, message);
+            Log.d(TAG, message)
         }
     }
 }

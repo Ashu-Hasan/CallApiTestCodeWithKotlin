@@ -1,585 +1,563 @@
-package com.ashu.callapitestcode.UILayers;
+package com.ashu.callapitestcode.UILayers
 
-import android.Manifest;
-import android.annotation.SuppressLint;
-import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.ViewGroup;
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.view.ViewGroup
+import androidx.annotation.RequiresPermission
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.ashu.callapitestcode.R
+import com.ashu.callapitestcode.data.Api.APIDataUri
+import com.ashu.callapitestcode.data.Api.APIHelper
+import com.ashu.callapitestcode.data.Api.ApiClient
+import com.ashu.callapitestcode.data.adapter.ForecastAdapter
+import com.ashu.callapitestcode.data.model.ForecastItem
+import com.ashu.callapitestcode.data.model.WeatherItem
+import com.ashu.callapitestcode.databinding.ActivityMainBinding
+import com.ashu.callapitestcode.other.CustomDialog.AshDialog
+import com.ashu.callapitestcode.other.LocationHelper
+import com.ashu.callapitestcode.other.graphs.AQISeekBar
+import com.ashu.callapitestcode.other.graphs.ImageLoaderUtil
+import com.ashu.callapitestcode.uitils.TimeUtils
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.google.gson.JsonObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
+class MainActivity : AppCompatActivity() {
 
-import com.ashu.callapitestcode.R;
-import com.ashu.callapitestcode.data.Api.APIDataUri;
-import com.ashu.callapitestcode.data.Api.APIHelper;
-import com.ashu.callapitestcode.data.Api.ApiClient;
-import com.ashu.callapitestcode.data.adapter.ForecastAdapter;
-import com.ashu.callapitestcode.data.model.ForecastItem;
-import com.ashu.callapitestcode.data.model.WeatherItem;
-import com.ashu.callapitestcode.databinding.ActivityMainBinding;
-import com.ashu.callapitestcode.other.CustomDialog.AshDialog;
-import com.ashu.callapitestcode.other.LocationHelper;
-import com.ashu.callapitestcode.other.graphs.AQISeekBar;
-import com.ashu.callapitestcode.other.graphs.ImageLoaderUtil;
-import com.ashu.callapitestcode.uitils.TimeUtils;
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
-import com.google.gson.JsonObject;
+    private val TAG = "MainActivityData"
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var locationHelper: LocationHelper
 
-import java.util.ArrayList;
-import java.util.List;
+    private val LOCATION_PERMISSION_REQUEST = 100
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+    private val weatherItemsList = mutableListOf<WeatherItem>()
+    private val forecastList = mutableListOf<ForecastItem>()
 
-public class MainActivity extends AppCompatActivity {
-    String TAG = "MainActivityData";
-    ActivityMainBinding binding;
-    private LocationHelper locationHelper;
-    private int LOCATION_PERMISSION_REQUEST = 100;
+    private lateinit var forecastAdapter: ForecastAdapter
+    private lateinit var loadingDialog: AshDialog
 
-    List<WeatherItem> weatherItemsList = new ArrayList<>();
-    List<ForecastItem> forecastList = new ArrayList<>();
-    ForecastAdapter forecastAdapter;
+    private var isHourlyChecked = true
 
-    AshDialog loadingDialog;
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    boolean isHourlyChecked = true;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         TimeUtils.setHomeStatusBarColor(
-                getWindow(),
-                ContextCompat.getColor(this, R.color.toolBarColor)
-        );
+            window,
+            ContextCompat.getColor(this, R.color.toolBarColor)
+        )
 
+        // Recycler
+        forecastAdapter = ForecastAdapter(this, forecastList)
+        binding.recyclerForecast.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.recyclerForecast.adapter = forecastAdapter
 
-        forecastAdapter = new ForecastAdapter(this, forecastList);
+        loadingDialog = AshDialog(this, "Please wait", "")
 
-        binding.recyclerForecast.setLayoutManager(
-                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        );
+        setAqiSeekBar()
 
-        binding.recyclerForecast.setAdapter(forecastAdapter);
+        val rootView = findViewById<ViewGroup>(android.R.id.content)
 
-        loadingDialog = new AshDialog(MainActivity.this, "Please wait", "");
+        binding.blurViewCard.setupWith(rootView)
+            .setFrameClearDrawable(window.decorView.background)
+            .setBlurRadius(20f)
+            .setOverlayColor(0x20FFFFFF)
 
+        binding.blurViewCard2.setupWith(rootView)
+            .setFrameClearDrawable(window.decorView.background)
+            .setBlurRadius(20f)
+            .setOverlayColor(0x20FFFFFF)
 
-        setAqiSeekBar();
+        getWeatherReportHourly()
+        setLineChart()
 
-        // Root view (this is correct)
-        ViewGroup rootView = findViewById(android.R.id.content);
+        locationHelper = LocationHelper(this)
+        getLocation()
 
-        binding.blurViewCard.setupWith(rootView)   // ✅ THIS IS CORRECT
-                .setFrameClearDrawable(getWindow().getDecorView().getBackground())
-                .setBlurRadius(20f)
-                .setOverlayColor(0x20FFFFFF);
-
-        binding.blurViewCard2.setupWith(rootView)   // ✅ THIS IS CORRECT
-                .setFrameClearDrawable(getWindow().getDecorView().getBackground())
-                .setBlurRadius(20f)
-                .setOverlayColor(0x20FFFFFF);
-
-
-
-
-       /* weatherItemsList.add(new WeatherItem("4pm", "https://apiserver.aqi.in/uploads/weather-icons/6.svg", 17, 10));
-        weatherItemsList.add(new WeatherItem("5pm", "https://apiserver.aqi.in/uploads/weather-icons/1.svg", 15, 20));
-        weatherItemsList.add(new WeatherItem("6pm", "https://apiserver.aqi.in/uploads/weather-icons/3.svg", 12, 50));
-        weatherItemsList.add(new WeatherItem("7pm", "https://apiserver.aqi.in/uploads/weather-icons/4.svg", 10, 80));
-        weatherItemsList.add(new WeatherItem("8pm", "https://apiserver.aqi.in/uploads/weather-icons/1.svg", 11, 5));
-        weatherItemsList.add(new WeatherItem("9pm", "https://apiserver.aqi.in/uploads/weather-icons/6.svg", 14, 80));
-        weatherItemsList.add(new WeatherItem("10pm", "https://apiserver.aqi.in/uploads/weather-icons/6.svg", 18, 60));
-        weatherItemsList.add(new WeatherItem("11pm", "https://apiserver.aqi.in/uploads/weather-icons/6.svg", 11, 80));
-        weatherItemsList.add(new WeatherItem("12pm", "https://apiserver.aqi.in/uploads/weather-icons/6.svg", 9, 90));
-        weatherItemsList.add(new WeatherItem("1am", "https://apiserver.aqi.in/uploads/weather-icons/6.svg", 100, 10));*/
-
-
-
-
-        getWeatherReportHourly();
-
-
-        setLineChart();
-
-        locationHelper = new LocationHelper(this);
-
-
-        getLocation();
-
-        binding.hourlyBtn.setOnClickListener(view -> {
-            if (!isHourlyChecked){
-                isHourlyChecked = true;
-                binding.hourlyBtn.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.white));
-                binding.hourlyBtn.setBackgroundResource(R.drawable.background_bg6);
-
-                binding.dailyBtn.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.text_color_heading));
-                binding.dailyBtn.setBackgroundResource(R.drawable.background_bg5);
-
-                binding.weatherGraphLayout.setVisibility(ViewGroup.VISIBLE);
-                binding.recyclerForecast.setVisibility(ViewGroup.GONE);
-
-                getWeatherReportHourly();
+        // Toggle buttons
+        binding.hourlyBtn.setOnClickListener {
+            if (!isHourlyChecked) {
+                isHourlyChecked = true
+                updateToggleUI(true)
+                getWeatherReportHourly()
             }
-        });
+        }
 
-        binding.dailyBtn.setOnClickListener(view -> {
-            if (isHourlyChecked){
-                isHourlyChecked = false;
-                binding.dailyBtn.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.white));
-                binding.dailyBtn.setBackgroundResource(R.drawable.background_bg6);
-
-                binding.hourlyBtn.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.text_color_heading));
-                binding.hourlyBtn.setBackgroundResource(R.drawable.background_bg5);
-
-                binding.weatherGraphLayout.setVisibility(ViewGroup.GONE );
-                binding.recyclerForecast.setVisibility(ViewGroup.VISIBLE );
-
-                getWeatherReportDaily();
+        binding.dailyBtn.setOnClickListener {
+            if (isHourlyChecked) {
+                isHourlyChecked = false
+                updateToggleUI(false)
+                getWeatherReportDaily()
             }
-        });
-
+        }
     }
 
-    private void getWeatherReportDaily() {
-        ApiClient.getInstance().getApi().commonGETMethodToHitAllAPIs(APIDataUri.getWeatherUrl("14143", "locationId", "daily")).enqueue(new Callback<JsonObject>() {
-            @SuppressLint("NotifyDataSetChanged")
-            @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                JSONObject responseBody = APIHelper.getResponseData(TAG, response, true);
+    private fun setAqiSeekBar() {
 
-                Log.e(TAG, "getWeatherReport response:- " + responseBody);
+        val customLevels = mutableListOf(
+            AQISeekBar.Level(0f, 100f, Color.parseColor("#59B61F"), "Good"),
+            AQISeekBar.Level(100f, 200f, Color.parseColor("#EEC732"), "Moderate"),
+            AQISeekBar.Level(200f, 300f, Color.parseColor("#EA8C34"), "Poor"),
+            AQISeekBar.Level(300f, 400f, Color.parseColor("#E95478"), "Unhealthy"),
+            AQISeekBar.Level(400f, 500f, Color.parseColor("#B33FBA"), "Severe"),
+            AQISeekBar.Level(500f, 600f, Color.parseColor("#C92033"), "Hazardous")
+        )
 
-                try {
-                    if (responseBody.has("data") && responseBody.getJSONObject("data").has("forecastday")){
-                        weatherItemsList.clear();
-                        JSONArray forecastArray = responseBody
-                                .getJSONObject("data")
-                                .getJSONArray("forecastday");
+        val list = mutableListOf(
+            AQISeekBar.BottomText("0", "100"),
+            AQISeekBar.BottomText(null, "200"),
+            AQISeekBar.BottomText(null, "300"),
+            AQISeekBar.BottomText(null, "400"),
+            AQISeekBar.BottomText(null, "500"),
+            AQISeekBar.BottomText(null, "600+")
+        )
 
-                        forecastList.clear();
+        binding.aqiSeekBar.apply {
+            setBottomTexts(list)
+            setBottomMode(AQISeekBar.BOTTOM_CUSTOM)
 
-                        for (int i = 0; i < forecastArray.length(); i++) {
+            setLevels(customLevels)
 
-                            JSONObject obj = forecastArray.getJSONObject(i);
+            // optional controls
+            setShowLabels(true)
+            setShowBubble(false)
+            setUserInteractionEnabled(false)
 
-                            String date = obj.getString("date");
+            setProgress(250f) // ⚠️ Float
+        }
+    }
 
-                            JSONObject dayObj = obj.getJSONObject("day");
+    private fun setLineChart() {
 
-                            int maxTemp = (int) dayObj.getDouble("maxtemp_c");
-                            int minTemp = (int) dayObj.getDouble("mintemp_c");
-                            int rain = dayObj.optInt("daily_chance_of_rain");
+        val lineChart = findViewById<LineChart>(R.id.lineChart)
 
-                            String icon = dayObj.getJSONObject("condition").getString("icon");
+        // 🔹 Data
+        val entries = arrayListOf(
+            Entry(0f, 60f),
+            Entry(1f, 40f),
+            Entry(2f, 20f),
+            Entry(3f, 15f),
+            Entry(4f, 35f),
+            Entry(5f, 33f),
+            Entry(6f, 25f),
+            Entry(6f, 55f),
+            Entry(6f, 50f),
+            Entry(6f, 45f),
+            Entry(6f, 40f)
+        )
 
-                            // Convert date → Day (Thu, Fri...)
-                            String dayName = TimeUtils.convertDateFormat(date, "EEE");
+        // 🔹 DataSet
+        val dataSet = LineDataSet(entries, "").apply {
 
-                            forecastList.add(new ForecastItem(dayName, icon, maxTemp, minTemp, rain));
+            // Line styling
+            color = Color.parseColor("#59b61f")
+            lineWidth = 4f
+
+            // Circle
+            setCircleColor(Color.parseColor("#59b61f"))
+            circleRadius = 2f
+
+            // ❌ Shadow remove
+            setDrawFilled(false)
+
+            // Smooth curve
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+
+            // Values hide
+            setDrawValues(false)
+        }
+
+        // 🔹 Final Data
+        val lineData = LineData(dataSet)
+        lineChart.data = lineData
+
+        // ================= AXIS =================
+
+        // ❌ Right axis off
+        lineChart.axisRight.isEnabled = false
+
+        // ✅ Left axis
+        val leftAxis = lineChart.axisLeft
+        leftAxis.setDrawGridLines(true)
+        leftAxis.gridColor = Color.LTGRAY
+        leftAxis.axisMinimum = 10f
+        leftAxis.axisMaximum = 60f
+        leftAxis.setLabelCount(6, true)
+
+        // ❌ X-axis grid remove
+        val xAxis = lineChart.xAxis
+        xAxis.setDrawGridLines(false)
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+
+        // Labels
+        val labels = arrayOf("4pm","5pm","6pm","7pm","8pm","9pm","10pm")
+        xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+        xAxis.granularity = 1f
+
+        // ================= CLEAN UI =================
+
+        lineChart.description.isEnabled = false
+        lineChart.legend.isEnabled = false
+        lineChart.setDrawGridBackground(false)
+
+        // animation
+        lineChart.animateX(1000)
+
+        // refresh
+        lineChart.invalidate()
+    }
+
+    private fun updateToggleUI(isHourly: Boolean) {
+        if (isHourly) {
+            binding.hourlyBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.hourlyBtn.setBackgroundResource(R.drawable.background_bg6)
+
+            binding.dailyBtn.setTextColor(ContextCompat.getColor(this, R.color.text_color_heading))
+            binding.dailyBtn.setBackgroundResource(R.drawable.background_bg5)
+
+            binding.weatherGraphLayout.visibility = View.VISIBLE
+            binding.recyclerForecast.visibility = View.GONE
+        } else {
+            binding.dailyBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.dailyBtn.setBackgroundResource(R.drawable.background_bg6)
+
+            binding.hourlyBtn.setTextColor(ContextCompat.getColor(this, R.color.text_color_heading))
+            binding.hourlyBtn.setBackgroundResource(R.drawable.background_bg5)
+
+            binding.weatherGraphLayout.visibility = View.GONE
+            binding.recyclerForecast.visibility = View.VISIBLE
+        }
+    }
+
+    // ================= WEATHER =================
+
+    private fun getWeatherReportDaily() {
+        ApiClient.api
+            .commonGETMethodToHitAllAPIs(
+                APIDataUri.getWeatherUrl("14143", "locationId", "daily")
+            ).enqueue(object : Callback<JsonObject> {
+
+                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+
+                    val responseBody = APIHelper.getResponseData(TAG, response, true)
+
+                    try {
+                        val forecastArray = responseBody
+                            ?.getJSONObject("data")
+                            ?.getJSONArray("forecastday") ?: return
+
+                        forecastList.clear()
+
+                        for (i in 0 until forecastArray.length()) {
+
+                            val obj = forecastArray.getJSONObject(i)
+                            val dayObj = obj.getJSONObject("day")
+
+                            val item = ForecastItem(
+                                day = TimeUtils.convertDateFormat(obj.getString("date"), "EEE"),
+                                icon = dayObj.getJSONObject("condition").getString("icon"),
+                                maxTemp = dayObj.getDouble("maxtemp_c").toInt(),
+                                minTemp = dayObj.getDouble("mintemp_c").toInt(),
+                                rain = dayObj.optInt("daily_chance_of_rain")
+                            )
+
+                            forecastList.add(item)
                         }
 
-                        forecastAdapter.notifyDataSetChanged();
+                        forecastAdapter.notifyDataSetChanged()
+
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error: ${e.message}")
                     }
-
-                } catch (Exception e) {
-                    Log.e(TAG, "getWeatherReport error:- " + e.getMessage());
                 }
-            }
 
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable throwable) {
-
-            }
-        });
+                override fun onFailure(call: Call<JsonObject>, t: Throwable) {}
+            })
     }
 
-    private void getWeatherReportHourly() {
-        ApiClient.getInstance().getApi().commonGETMethodToHitAllAPIs(APIDataUri.getWeatherUrl("14143", "locationId", "hourly")).enqueue(new Callback<JsonObject>() {
-            @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                JSONObject responseBody = APIHelper.getResponseData(TAG, response, true);
+    private fun getWeatherReportHourly() {
+        ApiClient.api
+            .commonGETMethodToHitAllAPIs(
+                APIDataUri.getWeatherUrl("14143", "locationId", "hourly")
+            ).enqueue(object : Callback<JsonObject> {
 
-                Log.e(TAG, "getWeatherReport response:- " + responseBody);
+                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
 
-                try {
-                    if (responseBody.has("data") && responseBody.getJSONObject("data").has("hour")){
-                        weatherItemsList.clear();
-                        JSONArray hour = responseBody.getJSONObject("data").getJSONArray("hour");
+                    val responseBody = APIHelper.getResponseData(TAG, response, true)
 
-                        for (int loop = 0; loop < hour.length(); loop++) {
+                    try {
+                        val hourArray = responseBody
+                            ?.getJSONObject("data")
+                            ?.getJSONArray("hour") ?: return
 
-                            JSONObject item = hour.getJSONObject(loop);
+                        weatherItemsList.clear()
 
-                            // 🔍 LOG RAW ITEM
-                            Log.d(TAG, "Hour[" + loop + "] Raw: " + item.toString());
+                        for (i in 0 until hourArray.length()) {
 
-                            String time = item.optString("time");
-                            double temp = item.optDouble("temp_c");
-                            int rain = item.optInt("chance_of_rain");
-                            String icon = item
-                                    .getJSONObject("condition")
-                                    .optString("icon");
+                            val item = hourArray.getJSONObject(i)
 
-                            // 🔍 LOG EACH VALUE
-                            Log.d(TAG, "Parsed -> Time: " + time +
-                                    " Temp: " + temp +
-                                    " Rain: " + rain +
-                                    " Icon: " + icon);
-
-                            WeatherItem weatherItem = new WeatherItem();
-
-                            weatherItem.setTime(
-                                    TimeUtils.convertDateFormat(time, "hh:mm a")
-                            );
-
-                            weatherItem.setIconUrl(icon);
-
-                            // ✅ FIXED (was wrong earlier)
-                            weatherItem.setTemp((float) temp);
-
-                            // ✅ add rain (if your model supports it)
-                            weatherItem.setRain(rain);
-
-                            weatherItemsList.add(weatherItem);
+                            weatherItemsList.add(
+                                WeatherItem(
+                                    time = TimeUtils.convertDateFormat(
+                                        item.optString("time"),
+                                        "hh:mm a"
+                                    ),
+                                    iconUrl = item.getJSONObject("condition").optString("icon"),
+                                    temp = item.optDouble("temp_c").toFloat(),
+                                    rain = item.optInt("chance_of_rain")
+                                )
+                            )
                         }
 
-                        binding.weatherGraph.setData(weatherItemsList);
+                        binding.weatherGraph.setData(weatherItemsList)
 
-                        binding.weatherGraph.setTextSizes(50f, 30f, 30f);
-                        binding.weatherGraph.setColors(Color.WHITE, Color.BLACK);
-        /*binding.weatherGraph.setVerticalSpacing(
-                50f,   // time Y
-                120f,  // icon Y
-                200f,  // temp Y
-                250f,  // graph start
-                500f   // rain Y
-        );
-        binding.weatherGraph.setItemWidth(160f);*/
-
-//        binding.weatherGraph.adjustLayout(40f, 60f, 120f);
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error: ${e.message}")
                     }
-
-                } catch (Exception e) {
-                    Log.e(TAG, "getWeatherReport error:- " + e.getMessage());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable throwable) {
-
-            }
-        });
-    }
-
-    private void setLineChart() {
-        LineChart lineChart = findViewById(R.id.lineChart);
-
-// 🔹 Data
-        ArrayList<Entry> entries = new ArrayList<>();
-        entries.add(new Entry(0, 60));
-        entries.add(new Entry(1, 40));
-        entries.add(new Entry(2, 20));
-        entries.add(new Entry(3, 15));
-        entries.add(new Entry(4, 35));
-        entries.add(new Entry(5, 33));
-        entries.add(new Entry(6, 25));
-        entries.add(new Entry(6, 55));
-        entries.add(new Entry(6, 50));
-        entries.add(new Entry(6, 45));
-        entries.add(new Entry(6, 40));
-
-// 🔹 DataSet
-        LineDataSet dataSet = new LineDataSet(entries, "");
-
-// Line styling
-        dataSet.setColor(Color.parseColor("#3F51B5"));
-        dataSet.setLineWidth(2f);
-        dataSet.setCircleColor(Color.BLACK);
-        dataSet.setCircleRadius(4f);
-
-// ❌ Shadow remove
-        dataSet.setDrawFilled(false);
-
-// Smooth curve
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-
-// Values hide (clean UI)
-        dataSet.setDrawValues(false);
-
-        dataSet.setLineWidth(4f);
-        dataSet.setColor(Color.parseColor("#59b61f"));
-        dataSet.setCircleRadius(2f); // dots bhi bade kar do
-        dataSet.setCircleColor(Color.parseColor("#59b61f"));
-
-// 🔹 Final Data
-        LineData lineData = new LineData(dataSet);
-        lineChart.setData(lineData);
-
-
-// ================= AXIS CONTROL =================
-
-// ❌ Right axis off
-        lineChart.getAxisRight().setEnabled(false);
-
-// ✅ Left axis (horizontal lines only)
-        YAxis leftAxis = lineChart.getAxisLeft();
-        leftAxis.setDrawGridLines(true);
-
-        leftAxis.setGridColor(Color.LTGRAY);
-        leftAxis.setAxisMinimum(10f); // start
-        leftAxis.setAxisMaximum(60f); // end
-        leftAxis.setLabelCount(6, true);
-
-// ❌ X-axis vertical grid remove
-        XAxis xAxis = lineChart.getXAxis();
-        xAxis.setDrawGridLines(false);
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-
-// Labels
-        String[] labels = {"4pm","5pm","6pm","7pm","8pm","9pm","10pm"};
-        xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
-        xAxis.setGranularity(1f);
-
-
-// ================= CLEAN UI =================
-
-// remove description
-        lineChart.getDescription().setEnabled(false);
-
-// remove legend
-        lineChart.getLegend().setEnabled(false);
-
-// remove background grid
-        lineChart.setDrawGridBackground(false);
-
-// animation (optional 😏)
-        lineChart.animateX(1000);
-
-// refresh
-        lineChart.invalidate();
-    }
-
-    private void setAqiSeekBar() {
-        List<AQISeekBar.Level> customLevels = new ArrayList<>();
-
-        customLevels.add(new AQISeekBar.Level(0, 100, Color.parseColor("#59B61F"), "Good"));
-        customLevels.add(new AQISeekBar.Level(100, 200, Color.parseColor("#EEC732"), "Moderate"));
-        customLevels.add(new AQISeekBar.Level(200, 300, Color.parseColor("#EA8C34"), "Poor"));
-        customLevels.add(new AQISeekBar.Level(300, 400, Color.parseColor("#E95478"), "Unhealthy"));
-        customLevels.add(new AQISeekBar.Level(400, 500, Color.parseColor("#B33FBA"), "Severe"));
-        customLevels.add(new AQISeekBar.Level(500, 600, Color.parseColor("#C92033"), "Hazardous"));
-
-        List<AQISeekBar.BottomText> list = new ArrayList<>();
-
-        list.add(new AQISeekBar.BottomText("0", "100"));
-        list.add(new AQISeekBar.BottomText(null, "200"));
-        list.add(new AQISeekBar.BottomText(null, "300"));
-        list.add(new AQISeekBar.BottomText(null, "400"));
-        list.add(new AQISeekBar.BottomText(null, "500"));
-        list.add(new AQISeekBar.BottomText(null, "600+"));
-
-        binding.aqiSeekBar.setBottomTexts(list);
-        binding.aqiSeekBar.setBottomMode(AQISeekBar.BOTTOM_CUSTOM);
-
-
-        binding.aqiSeekBar.setLevels(customLevels);
-// optional controls
-        binding.aqiSeekBar.setShowLabels(true);
-        //  seekBar.setShowBottomText(true);
-        binding.aqiSeekBar.setShowBubble(false);
-        binding.aqiSeekBar.setUserInteractionEnabled(false);
-        binding.aqiSeekBar.setProgress(250);
-    }
-
-    private void getLocation() {
-
-        if (locationHelper.hasPermission(MainActivity.this)) {
-
-            locationHelper.fetchLocation(new LocationHelper.LocationCallback() {
-                @Override
-                public void onLocationReceived(double lat, double lng) {
-                    Log.d(TAG, "Lat: " + lat + " Lng: " + lng);
-                    setAqiData(lat, lng);
                 }
 
-                @Override
-                public void onFailed(String message) {
-                    Log.e(TAG, message);
+                override fun onFailure(call: Call<JsonObject>, t: Throwable) {}
+            })
+    }
+
+    // ================= LOCATION =================
+
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    private fun getLocation() {
+        if (locationHelper.hasPermission()) {
+
+            locationHelper.fetchLocation(
+                onSuccess = { lat, lng ->
+                    Log.d(TAG, "Lat: $lat Lng: $lng")
+                    setAqiData(lat, lng)
+                },
+                onError = {
+                    Log.e(TAG, it ?: "Error")
                 }
-            });
+            )
 
         } else {
             ActivityCompat.requestPermissions(
-                    MainActivity.this,
-                    new String[]{
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                    },
-                    LOCATION_PERMISSION_REQUEST
-            );
+                this,
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
+                LOCATION_PERMISSION_REQUEST
+            )
         }
     }
 
-    private void setAqiData(double lat, double lng) {
-        loadingDialog.show();
-        Log.e(TAG, "setAqiData url:- " + APIDataUri.getAQIUrl(String.valueOf(lat), String.valueOf(lng)));
-        ApiClient.getInstance().getApi().commonGETMethodToHitAllAPIs(APIDataUri.getAQIUrl(String.valueOf(lat), String.valueOf(lng))).enqueue(new Callback<JsonObject>() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
+    // ================= AQI =================
 
-                try {
-                    JSONObject responseBody = APIHelper.getResponseData(TAG, response, true);
+    private fun setAqiData(lat: Double, lng: Double) {
+        loadingDialog.show()
 
-                    Log.e(TAG, "setAqiData response:- " + responseBody);
+        ApiClient.api
+            .commonGETMethodToHitAllAPIs(
+                APIDataUri.getAQIUrl(lat.toString(), lng.toString())
+            ).enqueue(object : Callback<JsonObject> {
 
-                    if (responseBody != null) {
-                        JSONObject aqiData = responseBody.getJSONArray("data").getJSONObject(0);
-                        binding.location.setText(aqiData.getString("location"));
-                        binding.cityState.setText(aqiData.getString("city") + ", " + aqiData.getString("state"));
+                @SuppressLint("SetTextI18n")
+                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
 
-                        setAqiValueStatusColor(aqiData.getJSONObject("iaqi").getInt("aqi"));
-                        binding.pm2Value.setText(aqiData.getJSONObject("iaqi").getString("pm25"));
-                        binding.pm10Value.setText(aqiData.getJSONObject("iaqi").getString("pm10"));
+                    val responseBody = APIHelper.getResponseData(TAG, response, true)
 
-                        ImageLoaderUtil.loadSvgIntoImageView(MainActivity.this, aqiData.getJSONObject("weather").getJSONObject("condition").getString("icon"), binding.imageView);
+                    try {
+                        val responseBody = APIHelper.getResponseData(TAG, response, true)
 
-                        binding.temperatureText.setText(aqiData.getJSONObject("weather").getString("temp_c") + "°");
-                        binding.weatherStatus.setText(aqiData.getJSONObject("weather").getJSONObject("condition").getString("text"));
-                        binding.humidityValue.setText(aqiData.getJSONObject("weather").getString("humidity") + "%");
-                        binding.UVIndexValue.setText(aqiData.getJSONObject("weather").getString("uv"));
-                        binding.WindSpeedValue.setText(aqiData.getJSONObject("weather").getString("wind_kph") + "km/hr");
-                        binding.updatedDate.setText(TimeUtils.convertDateFormat(aqiData.getString("updatedAt"), "yyyy-MM-dd HH:mm"));
+                        Log.e(TAG, "setAqiData response:- $responseBody")
 
-                        ImageLoaderUtil.loadSvgIntoImageView(MainActivity.this, aqiData.getString("background_image"), binding.backgroundImage);
+                        responseBody?.let {
 
-                        binding.AQIpm2Value.setText(aqiData.getJSONObject("iaqi").getString("pm25"));
-                        binding.AQIpm10Value.setText(aqiData.getJSONObject("iaqi").getString("pm10"));
+                            val aqiData = it.getJSONArray("data").getJSONObject(0)
 
-                        if (aqiData.getJSONObject("iaqi").has("so2")) {
-                            binding.AQISO2Value.setText(aqiData.getJSONObject("iaqi").getString("so2"));
-                        }else {
-                            binding.AQISO2ValueLayout.setVisibility(ViewGroup.GONE);
+                            binding.location.text = aqiData.getString("location")
+                            binding.cityState.text =
+                                "${aqiData.getString("city")}, ${aqiData.getString("state")}"
+
+                            val iaqi = aqiData.getJSONObject("iaqi")
+                            val weather = aqiData.getJSONObject("weather")
+
+                            setAqiValueStatusColor(iaqi.getInt("aqi"))
+
+                            binding.pm2Value.text = iaqi.getString("pm25")
+                            binding.pm10Value.text = iaqi.getString("pm10")
+
+                            ImageLoaderUtil.loadSvgIntoImageView(
+                                this@MainActivity,
+                                weather.getJSONObject("condition").getString("icon"),
+                                binding.imageView
+                            )
+
+                            binding.temperatureText.text = "${weather.getString("temp_c")}°"
+                            binding.weatherStatus.text =
+                                weather.getJSONObject("condition").getString("text")
+                            binding.humidityValue.text = "${weather.getString("humidity")}%"
+                            binding.UVIndexValue.text = weather.getString("uv")
+                            binding.WindSpeedValue.text = "${weather.getString("wind_kph")}km/hr"
+
+                            binding.updatedDate.text =
+                                TimeUtils.convertDateFormat(
+                                    aqiData.getString("updatedAt"),
+                                    "yyyy-MM-dd HH:mm"
+                                )
+
+                            ImageLoaderUtil.loadSvgIntoImageView(
+                                this@MainActivity,
+                                aqiData.getString("background_image"),
+                                binding.backgroundImage
+                            )
+
+                            binding.AQIpm2Value.text = iaqi.getString("pm25")
+                            binding.AQIpm10Value.text = iaqi.getString("pm10")
+
+                            // Optional gases
+                            if (iaqi.has("so2")) {
+                                binding.AQISO2Value.text = iaqi.getString("so2")
+                            } else {
+                                binding.AQISO2ValueLayout.visibility = ViewGroup.GONE
+                            }
+
+                            if (iaqi.has("no2")) {
+                                binding.AQINO2Value.text = iaqi.getString("no2")
+                            } else {
+                                binding.AQINO2ValueLayout.visibility = ViewGroup.GONE
+                            }
+
+                            if (iaqi.has("co")) {
+                                binding.AQICOValue.text = iaqi.getString("co")
+                            } else {
+                                binding.AQICOValueLayout.visibility = ViewGroup.GONE
+                            }
+
+                            if (iaqi.has("o3")) {
+                                binding.AQIO3Value.text = iaqi.getString("o3")
+                            } else {
+                                binding.AQIO3ValueLayout.visibility = ViewGroup.GONE
+                            }
                         }
-                        if (aqiData.getJSONObject("iaqi").has("no2")) {
-                            binding.AQINO2Value.setText(aqiData.getJSONObject("iaqi").getString("no2"));
-                        }else {
-                            binding.AQINO2ValueLayout.setVisibility(ViewGroup.GONE);
-                        }
-                        if (aqiData.getJSONObject("iaqi").has("co")) {
-                            binding.AQICOValue.setText(aqiData.getJSONObject("iaqi").getString("co"));
-                        }
-                        else {
-                            binding.AQICOValueLayout.setVisibility(ViewGroup.GONE);
-                        }
-                        if (aqiData.getJSONObject("iaqi").has("o3")) {
-                            binding.AQIO3Value.setText(aqiData.getJSONObject("iaqi").getString("o3"));
-                        }
-                        else {
-                            binding.AQIO3ValueLayout.setVisibility(ViewGroup.GONE);
-                        }
 
-
+                    } catch (e: Exception) {
+                        Log.e(TAG, "setAqiData error:- ${e.message}")
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "setAqiData error:- " + e.getMessage());
+
+                    loadingDialog.dismiss()
                 }
 
-                loadingDialog.dismiss();
-            }
-
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable throwable) {
-                loadingDialog.dismiss();
-            }
-        });
+                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                    loadingDialog.dismiss()
+                }
+            })
     }
 
-    private void setAqiValueStatusColor(int aqiInt) {
-        binding.aqiValue.setText(String.valueOf(aqiInt));
-        binding.aqiSeekBar.setProgress(aqiInt);
+    private fun setAqiValueStatusColor(aqiInt: Int) {
 
-        String aqiStatus = "Good";
-        int aqiStatusBg = R.color.light_good_color;
-        int aqiColor = R.color.good_color;
-        int homeBg = R.drawable.home_bg1;
-        int aqiIcon = R.drawable.good_aqi_icon;
+        binding.aqiValue.text = aqiInt.toString()
+        binding.aqiSeekBar.setProgress(aqiInt.toFloat())
 
-        if (aqiInt < 100){
+        var aqiStatus = "Good"
+        var aqiStatusBg = R.color.light_good_color
+        var aqiColor = R.color.good_color
+        var homeBg = R.drawable.home_bg1
+        var aqiIcon = R.drawable.good_aqi_icon
 
-        }else if (aqiInt < 200){
-            aqiStatus = "Moderate";
-            aqiStatusBg = R.color.light_moderate_color;
-            aqiColor = R.color.moderate_color;
-            homeBg = R.drawable.home_bg2;
-            aqiIcon = R.drawable.moderate_aqi_icon;
-        }else if (aqiInt < 300){
-            aqiStatus = "Poor";
-            aqiStatusBg = R.color.light_poor_color;
-            aqiColor = R.color.poor_color;
-            homeBg = R.drawable.home_bg3;
-            aqiIcon = R.drawable.poor_aqi_icon;
-        }else if (aqiInt < 400){
-            aqiStatus = "Unhealthy";
-            aqiStatusBg = R.color.light_unhealthy_color;
-            aqiColor = R.color.unhealthy_color;
-            homeBg = R.drawable.home_bg4;
-            aqiIcon = R.drawable.unhealthy_aqi_icon;
-        }else if (aqiInt < 500){
-            aqiStatus = "Severe";
-            aqiStatusBg = R.color.light_severe_color;
-            aqiColor = R.color.severe_color;
-            homeBg = R.drawable.home_bg5;
-            aqiIcon = R.drawable.severe_aqi_icon;
-        }else if (aqiInt < 600){
-            aqiStatus = "Hazardous";
-            aqiStatusBg = R.color.light_hazardous_color;
-            aqiColor = R.color.hazardous_color;
-            homeBg = R.drawable.home_bg6;
-            aqiIcon = R.drawable.hazardous_aqi_icon;
+        when {
+            aqiInt < 100 -> {
+                // default (Good)
+            }
+
+            aqiInt < 200 -> {
+                aqiStatus = "Moderate"
+                aqiStatusBg = R.color.light_moderate_color
+                aqiColor = R.color.moderate_color
+                homeBg = R.drawable.home_bg2
+                aqiIcon = R.drawable.moderate_aqi_icon
+            }
+
+            aqiInt < 300 -> {
+                aqiStatus = "Poor"
+                aqiStatusBg = R.color.light_poor_color
+                aqiColor = R.color.poor_color
+                homeBg = R.drawable.home_bg3
+                aqiIcon = R.drawable.poor_aqi_icon
+            }
+
+            aqiInt < 400 -> {
+                aqiStatus = "Unhealthy"
+                aqiStatusBg = R.color.light_unhealthy_color
+                aqiColor = R.color.unhealthy_color
+                homeBg = R.drawable.home_bg4
+                aqiIcon = R.drawable.unhealthy_aqi_icon
+            }
+
+            aqiInt < 500 -> {
+                aqiStatus = "Severe"
+                aqiStatusBg = R.color.light_severe_color
+                aqiColor = R.color.severe_color
+                homeBg = R.drawable.home_bg5
+                aqiIcon = R.drawable.severe_aqi_icon
+            }
+
+            else -> {
+                aqiStatus = "Hazardous"
+                aqiStatusBg = R.color.light_hazardous_color
+                aqiColor = R.color.hazardous_color
+                homeBg = R.drawable.home_bg6
+                aqiIcon = R.drawable.hazardous_aqi_icon
+            }
         }
 
-        binding.aqiStatus.setText(aqiStatus);
-        binding.aqiStatus.setTextColor(ContextCompat.getColor(MainActivity.this, aqiColor));
-        binding.aqiValue.setTextColor(ContextCompat.getColor(MainActivity.this, aqiColor));
-        binding.aqiStatus.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, aqiStatusBg)));
-        binding.centerLayout.setBackgroundResource(homeBg);
-        binding.aqiIcon.setImageResource(aqiIcon);
+        binding.aqiStatus.text = aqiStatus
+
+        val color = ContextCompat.getColor(this, aqiColor)
+
+        binding.aqiStatus.setTextColor(color)
+        binding.aqiValue.setTextColor(color)
+
+        binding.aqiStatus.backgroundTintList =
+            ColorStateList.valueOf(ContextCompat.getColor(this, aqiStatusBg))
+
+        binding.centerLayout.setBackgroundResource(homeBg)
+        binding.aqiIcon.setImageResource(aqiIcon)
     }
 
-    @Override
-    public void onRequestPermissionsResult(
-            int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
+    // ================= PERMISSION =================
 
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == LOCATION_PERMISSION_REQUEST) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getLocation();
-            }
+        if (requestCode == LOCATION_PERMISSION_REQUEST &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            getLocation()
         }
     }
 }

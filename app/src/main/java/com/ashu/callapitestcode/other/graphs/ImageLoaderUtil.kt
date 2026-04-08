@@ -1,117 +1,120 @@
-package com.ashu.callapitestcode.other.graphs;
+package com.ashu.callapitestcode.other.graphs
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.widget.ImageView;
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.widget.ImageView
+import coil.ComponentRegistry
+import coil.ImageLoader
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
+import coil.target.Target
 
-import androidx.annotation.NonNull;
+object ImageLoaderUtil {
 
-import org.jetbrains.annotations.Nullable;
+    // 🔥 Singleton ImageLoader
+    private var imageLoader: ImageLoader? = null
 
-import coil.ComponentRegistry;
-import coil.ImageLoader;
-import coil.decode.SvgDecoder;
-import coil.request.ImageRequest;
-import coil.target.Target;
+    private fun getImageLoader(context: Context): ImageLoader {
+        return imageLoader ?: ImageLoader.Builder(context.applicationContext)
+            .components(
+                ComponentRegistry.Builder()
+                    .add(SvgDecoder.Factory())
+                    .build()
+            )
+            .build()
+            .also { imageLoader = it }
+    }
 
-public class ImageLoaderUtil {
+    // =========================================================
+    // ✅ 1. LOAD SVG → BITMAP
+    // =========================================================
+    fun loadSvgBitmap(
+        context: Context,
+        url: String,
+        callback: SvgCallback
+    ) {
 
-    // 🔥 Singleton ImageLoader (important for performance)
-    private static ImageLoader imageLoader;
+        val request = ImageRequest.Builder(context)
+            .data(url)
+            .allowHardware(false) // required for bitmap
+            .target(object : Target {
 
-    private static ImageLoader getImageLoader(Context context) {
-        if (imageLoader == null) {
-            imageLoader = new ImageLoader.Builder(context.getApplicationContext())
-                    .components(new ComponentRegistry.Builder()
-                            .add(new SvgDecoder.Factory())
-                            .build())
-                    .build();
+                override fun onStart(placeholder: Drawable?) {}
+
+                override fun onError(error: Drawable?) {
+                    callback.onLoaded(null)
+                }
+
+                override fun onSuccess(result: Drawable) {
+                    val bitmap = drawableToBitmap(result)
+                    callback.onLoaded(bitmap)
+                }
+            })
+            .build()
+
+        getImageLoader(context).enqueue(request)
+    }
+
+    // =========================================================
+    // ✅ 2. LOAD SVG → IMAGEVIEW
+    // =========================================================
+    fun loadSvgIntoImageView(
+        context: Context,
+        url: String,
+        imageView: ImageView
+    ) {
+        val request = ImageRequest.Builder(context)
+            .data(url)
+            .target(imageView)
+            .build()
+
+        getImageLoader(context).enqueue(request)
+    }
+
+    // =========================================================
+    // ✅ 3. LOAD NORMAL IMAGE
+    // =========================================================
+    fun loadImage(
+        context: Context,
+        url: String,
+        imageView: ImageView
+    ) {
+        val request = ImageRequest.Builder(context)
+            .data(url)
+            .target(imageView)
+            .build()
+
+        getImageLoader(context).enqueue(request)
+    }
+
+    // =========================================================
+    // 🔧 Drawable → Bitmap
+    // =========================================================
+    fun drawableToBitmap(drawable: Drawable): Bitmap {
+
+        if (drawable is BitmapDrawable) {
+            return drawable.bitmap
         }
-        return imageLoader;
-    }
 
-    // =========================================================
-    // ✅ 1. LOAD SVG → BITMAP (For Custom View like Graph)
-    // =========================================================
-    public static void loadSvgBitmap(Context context, String url, SvgCallback callback) {
+        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 100
+        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 100
 
-        ImageRequest request = new ImageRequest.Builder(context)
-                .data(url)
-                .allowHardware(false) // required for bitmap
-                .target(new Target() {
-                    @Override
-                    public void onStart(@Nullable Drawable placeholder) {}
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
 
-                    @Override
-                    public void onError(@Nullable Drawable error) {
-                        callback.onLoaded(null);
-                    }
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
 
-                    @Override
-                    public void onSuccess(@NonNull Drawable result) {
-                        Bitmap bitmap = drawableToBitmap(result);
-                        callback.onLoaded(bitmap);
-                    }
-                })
-                .build();
-
-        getImageLoader(context).enqueue(request);
-    }
-
-    // =========================================================
-    // ✅ 2. LOAD SVG → IMAGEVIEW (NEW METHOD 🔥)
-    // =========================================================
-    public static void loadSvgIntoImageView(Context context, String url, ImageView imageView) {
-
-        ImageRequest request = new ImageRequest.Builder(context)
-                .data(url)
-                .target(imageView) // direct load into ImageView
-                .build();
-
-        getImageLoader(context).enqueue(request);
-    }
-
-    // =========================================================
-    // ✅ 3. LOAD NORMAL IMAGE (JPG/PNG)
-    // =========================================================
-    public static void loadImage(Context context, String url, ImageView imageView) {
-
-        ImageRequest request = new ImageRequest.Builder(context)
-                .data(url)
-                .target(imageView)
-                .build();
-
-        getImageLoader(context).enqueue(request);
-    }
-
-    // =========================================================
-    // 🔧 Drawable → Bitmap Converter
-    // =========================================================
-    public static Bitmap drawableToBitmap(Drawable drawable) {
-
-        if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable) drawable).getBitmap();
-        }
-
-        int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 100;
-        int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 100;
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-
-        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        drawable.draw(canvas);
-
-        return bitmap;
+        return bitmap
     }
 
     // =========================================================
     // CALLBACK
     // =========================================================
-    public interface SvgCallback {
-        void onLoaded(Bitmap bitmap);
+    fun interface SvgCallback {
+        fun onLoaded(bitmap: Bitmap?)
     }
 }
